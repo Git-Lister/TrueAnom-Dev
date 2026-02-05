@@ -7,7 +7,8 @@ services:
       POSTGRES_USER: true_anomaly
       POSTGRES_PASSWORD: true_anomaly
     ports:
-      - "5432:5432"
+      - "55432:5432"   # host_port:container_port  (changed host port to 55432)
+
   opensearch:
     image: opensearchproject/opensearch:2.11.0
     environment:
