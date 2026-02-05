@@ -11,4 +11,4 @@ class DocumentOut(BaseModel):
     ingest_time: datetime | None = None
 
     class Config:
-        from_attributes = True  # orm_mode in Pydantic v1
+        from_attributes = True  # Pydantic v2 equivalent of orm_mode = True

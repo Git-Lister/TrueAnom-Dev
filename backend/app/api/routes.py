@@ -9,6 +9,10 @@ from backend.app.models.schemas import DocumentOut
 
 router = APIRouter()
 
+@router.get("/documents/debug")
+def list_docs_debug(db: Session = Depends(get_db)):
+    docs = db.query(Document).limit(3).all()
+    return [{"id": d.id, "raw_path": d.raw_path} for d in docs]
 
 @router.get("/search")
 def search(q: str = "", limit: int = 20):
