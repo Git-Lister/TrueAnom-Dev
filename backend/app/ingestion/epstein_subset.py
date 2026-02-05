@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+import fitz  # PyMuPDF
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import SessionLocal, engine
@@ -27,6 +28,25 @@ def get_or_create_source(db: Session) -> Source:
     return src
 
 
+def extract_text_if_pdf(path: Path) -> str | None:
+    """
+    For now, only try to extract text from PDFs with embedded text.
+    TIFF/JPEG/etc. will be handled later via OCR.
+    """
+    if path.suffix.lower() != ".pdf":
+        return None
+    try:
+        doc = fitz.open(path)
+        parts: list[str] = []
+        for page in doc:
+            parts.append(page.get_text())
+        text = "\n".join(parts).strip()
+        return text or None
+    except Exception:
+        # Swallow errors for now; later we can log these
+        return None
+
+
 def ingest_epstein_subset():
     if not EPSTEIN_SUBSET_DIR.exists():
         raise RuntimeError(f"Directory not found: {EPSTEIN_SUBSET_DIR}")
@@ -41,7 +61,7 @@ def ingest_epstein_subset():
                     continue
 
                 full_path = Path(root) / fname
-                # Check if we already have a Document with this path
+
                 existing = (
                     db.query(Document)
                     .filter_by(raw_path=str(full_path))
@@ -50,17 +70,19 @@ def ingest_epstein_subset():
                 if existing:
                     continue
 
+                text = extract_text_if_pdf(full_path)
+
                 doc = Document(
                     source_id=source.id,
                     external_id=fname,
                     doc_type="generic_pdf",
                     title=fname,
                     description=None,
-                    ingest_time=datetime.utcnow(),
-                    text=None,  # to be filled by OCR/parse later
+                    ingest_time=datetime.utcnow(),  # TODO: switch to timezone-aware
+                    text=text,
                     raw_path=str(full_path),
                     ocr_confidence=None,
-                    is_searchable=False,  # becomes True after OCR
+                    is_searchable=bool(text),
                     meta_json=None,
                 )
                 db.add(doc)
