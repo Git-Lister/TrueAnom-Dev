@@ -118,5 +118,26 @@ class Relationship(Base):
     meta_json = Column(JSON, nullable=True)
 
     source_document = relationship("Document", back_populates="relationships")
-    from_entity = relationship("Entity", foreign_keys=[from_entity_id], back_populates="relationships_from")
-    to_entity = relationship("Entity", foreign_keys=[to_entity_id], back_populates="relationships_to")
+    from_entity = relationship(
+        "Entity",
+        foreign_keys=[from_entity_id],
+        back_populates="relationships_from",
+    )
+    to_entity = relationship(
+        "Entity",
+        foreign_keys=[to_entity_id],
+        back_populates="relationships_to",
+    )
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
+    event_type = Column(String, index=True)  # e.g. "email", "flight", "meeting"
+    event_time = Column(DateTime, index=True)
+    description = Column(Text, nullable=True)
+    meta_json = Column(JSON, nullable=True)
+
+    document = relationship("Document")
