@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from backend.app.db.deps import get_db
-from backend.app.db.schema import Document
+from backend.app.db.schema import Document, Event
 from backend.app.models.schemas import DocumentOut
 from backend.app.analytics.anomaly import compute_bursts_for_pair
+
 
 router = APIRouter()
 
@@ -47,3 +48,17 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
 def get_bursts(pair: str, bucket_days: int = 7, z_threshold: float = 1.5):
     bursts = compute_bursts_for_pair(pair=pair, bucket_days=bucket_days, z_threshold=z_threshold)
     return {"pair": pair, "bursts": bursts}
+
+@router.get("/events")
+def list_events(limit: int = 20, db: Session = Depends(get_db)):
+    evs = db.query(Event).order_by(Event.event_time).limit(limit).all()
+    return [
+        {
+            "id": e.id,
+            "event_type": e.event_type,
+            "event_time": e.event_time,
+            "description": e.description,
+            "meta_json": e.meta_json,
+        }
+        for e in evs
+    ]
